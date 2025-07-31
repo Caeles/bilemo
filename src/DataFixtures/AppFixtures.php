@@ -44,7 +44,7 @@ class AppFixtures extends Fixture
             $user->setLastName($this->faker->lastName);
             $user->setEmail($this->faker->email);
             $user->setPassword($this->faker->password);
-            $user->setRole($this->faker->randomElement(['ROLE_USER']));
+            $user->setRoles([$this->faker->randomElement(['ROLE_USER'])]);
       
             $randomCustomer = $customers[array_rand($customers)];
             $user->setCustomer($randomCustomer);
@@ -71,13 +71,15 @@ class AppFixtures extends Fixture
             }
             $manager->persist($product);
         }
+
         $userAdmin = new User();
         $userAdmin->setFirstName('Admin');
         $userAdmin->setLastName('Admin');
         $userAdmin->setEmail('admin@admin.com');
         $userAdmin->setPassword($this->userPasswordHasher->hashPassword($userAdmin, 'admin'));
-        $userAdmin->setRole('ROLE_ADMIN');
+        $userAdmin->setRoles(['ROLE_ADMIN']);
         $manager->persist($userAdmin);
+        
         $manager->flush();
     }
 }

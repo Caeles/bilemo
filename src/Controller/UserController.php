@@ -16,14 +16,20 @@ use App\Repository\CustomerRepository;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Http\Attribute\Security;
+use App\Service\VersioningService;
+
+
 
 final class UserController extends AbstractController
 {
     #[Route('/api/users', name: 'app_user', methods: ['GET'])]
-    #[Security("is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')", message: "Accès non autorisé")]
-    public function getAllUsers(UserRepository $userRepository, SerializerInterface $serializer): JsonResponse
+    // #[Security("is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')", message: "Accès non autorisé")]
+    public function getAllUsers(UserRepository $userRepository, SerializerInterface $serializer, Request $request): JsonResponse
     {
-        $userList = $userRepository->findAll();
+        $page = $request->query->get('page', 1);
+        $limit = $request->query->get('limit', 5);
+        
+        $userList = $userRepository->findAllWithPagination($page, $limit);
         $jsonUserList = $serializer->serialize($userList, 'json', ['groups' => 'getUser']);
         return new JsonResponse(
             $jsonUserList, Response::HTTP_OK, [], true
@@ -63,7 +69,7 @@ final class UserController extends AbstractController
         );
     }
 
-    #[Route('/api/user', name: 'app_user', methods: ['POST'])]
+    #[Route('/api/user', name: 'create_user', methods: ['POST'])]
     public function createUser( Request $request, 
     SerializerInterface $serializer, 
     EntityManagerInterface $entityManager, 

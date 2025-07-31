@@ -44,6 +44,10 @@ class Product
     #[ORM\Column(length: 255, nullable: false)]
     private ?string $description = null;
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Since('1.0')]
+    private ?string $comment = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -153,6 +157,18 @@ class Product
     public function setDescription(string $description): static
     {
         $this->description = $description;
+
+        return $this;
+    }
+
+    public function getComment(): ?string
+    {
+        return $this->comment;
+    }
+
+    public function setComment(?string $comment): static
+    {
+        $this->comment = $comment;
 
         return $this;
     }
