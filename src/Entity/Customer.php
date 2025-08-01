@@ -41,6 +41,7 @@ class Customer
     
 
     #[MaxDepth(1)]
+    #[Groups(['getCustomer'])]
     #[ORM\OneToMany(mappedBy: 'customer', targetEntity: User::class)]
     
     private Collection $users;

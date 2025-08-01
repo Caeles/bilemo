@@ -15,120 +15,111 @@ use App\Service\VersioningService;
 use Doctrine\Migrations\Version\Version;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
-use Nelmio\ApiDocBundle\Annotation\Model;
+use OpenApi\Attributes as OA;
+use Nelmio\ApiDocBundle\Attribute\Model;
 use Nelmio\ApiDocBundle\Annotation\Security;
-use OpenApi\Annotations as OA;
 
+#[OA\Tag(name: 'Products')]                 
 #[Route('/api/products', name: 'app_product')]
-
 final class ProductController extends AbstractController
 {
-    
-    /**
-     * Cette méthode permet de récupérer l'ensemble des produits.
-     * 
-     * @OA\Response(
-     *     response=200,
-     *     description="Retourne la liste des produits",
-     *     @OA\JsonContent(
-     *        type="array",
-     *        @OA\Items(ref=@Model(type=Product::class, groups={"getProducts"}))
-     *     )
-     * )
-     * @OA\Parameter(
-     *     name="page",
-     *     in="query",
-     *     description="La page que l'on veut récupérer",
-     *     @OA\Schema(type="int")
-     * )
-     * @OA\Parameter(
-     *     name="limit",
-     *     in="query",
-     *     description="Le nombre d'éléments que l'on veut récupérer",
-     *     @OA\Schema(type="int")
-     * )
-     * @OA\Tag(name="Products")
-     * 
-     * @param ProductRepository $productRepository
-     * @param SerializerInterface $serializer
-     * @param Request $request
-     * @param TagAwareCacheInterface $cache
-     * @return JsonResponse
-     */
-    
     public function __construct(private VersioningService $versioningService) {}
 
-    #[Route('', name: '_list')]
-    #[IsGranted('ROLE_USER', message: "Accès non autorisé")]
+// Liste des produits
+    #[Route('', name: '_list', methods: ['GET'])]
+    #[IsGranted('ROLE_USER', message: 'Accès non autorisé')]
+    #[OA\Get(
+        path: '/api/products',
+        summary: 'Liste des produits',
+        description: "Cette méthode permet de récupérer l'ensemble des produits.",
+        security: [['bearerAuth' => []]],
+        parameters: [
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                description: "La page que l'on veut récupérer",
+                schema: new OA\Schema(type: 'integer', default: 1)
+            ),
+            new OA\Parameter(
+                name: 'limit',
+                in: 'query',
+                description: "Le nombre d'éléments que l'on veut récupérer",
+                schema: new OA\Schema(type: 'integer', default: 5)
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Retourne la liste des produits',
+                content: new OA\JsonContent(
+                    type: 'array',
+                    items: new OA\Items(
+                        ref: new Model(type: Product::class, groups: ['getProducts'])
+                    )
+                )
+            ),
+            new OA\Response(response: 401, description: 'Accès non autorisé'),
+        ]
+    )]
     public function getAllProducts(
-        ProductRepository $productRepository, 
-        SerializerInterface $serializer, 
-        Request $request, 
+        ProductRepository $productRepository,
+        SerializerInterface $serializer,
+        Request $request,
         TagAwareCacheInterface $cache
-    ): JsonResponse
-    {
-      $page = $request->query->get('page', 1);
-      $limit = $request->query->get('limit', 5);
+    ): JsonResponse {
+        $page  = (int) $request->query->get('page', 1);
+        $limit = (int) $request->query->get('limit', 5);
 
-      $idCache = "getAllProducts_" . $page . '_' . $limit;
+        $idCache   = "getAllProducts_{$page}_{$limit}";
+        $fromCache = true;
 
-      //permet de savoir si l'élément vient d'être mis en cache
-      $fromCache = true;
-      
-      $productList = $cache->get($idCache, function (ItemInterface $item) use ($productRepository, $page, $limit, &$fromCache) {
-        $fromCache = false;
-        $item->tag('productsCache');
-        return $productRepository->findAllWithPagination($page, $limit);
-      });
+        $productList = $cache->get(
+            $idCache,
+            function (ItemInterface $item) use ($productRepository, $page, $limit, &$fromCache) {
+                $fromCache = false;
+                $item->tag('productsCache');
+                return $productRepository->findAllWithPagination($page, $limit);
+            }
+        );
 
-      $jsonProductList = $serializer->serialize($productList, 'json', ['groups' => 'getProducts']);
-      $response = new JsonResponse($jsonProductList, Response::HTTP_OK, [], true);
-      
-      if (!$fromCache) {
-        $response->headers->set('X-Cache-Status', "Le contenu n'est pas encore en cache!");
-      }
-      
-      return $response;
+        $jsonList = $serializer->serialize($productList, 'json', ['groups' => 'getProducts']);
+        $response = new JsonResponse($jsonList, Response::HTTP_OK, [], true);
+
+        if (!$fromCache) {
+            $response->headers->set('X-Cache-Status', "Le contenu n'est pas encore en cache !");
+        }
+
+        return $response;
     }
 
-   
-    #[Route('/{id}', name: '_show')]
-    #[IsGranted('ROLE_USER', message: "Accès non autorisé")]
+    // Détails d'un produit
+    #[Route('/{id}', name: '_show', methods: ['GET'])]
+    #[IsGranted('ROLE_USER', message: 'Accès non autorisé')]
+    #[OA\Get(
+        path: '/api/products/{id}',
+        summary: "Détails d'un produit",
+        description: "Cette méthode permet de récupérer les détails d'un produit."
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Retourne les détails d'un produit",
+        content: new OA\JsonContent(
+            ref: new Model(type: Product::class, groups: ['getProducts'])
+        )
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        description: 'ID du produit',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    public function getProductById(
+        SerializerInterface $serializer,
+        Product $product
+    ): JsonResponse {
+        $jsonProduct = $serializer->serialize($product, 'json');
 
-     /**
-     * Cette méthode permet de récupérer les détails d'un produit.
-     * 
-     * @OA\Response(
-     *     response=200,
-     *     description="Retourne les détails d'un produit",
-     *     @OA\JsonContent(
-     *        ref=@Model(type=Product::class, groups={"getProducts"})
-     *     )
-     * )
-     * @OA\Parameter(
-     *     name="id",
-     *     in="path",
-     *     description="ID du produit",
-     *     required=true,
-     *     @OA\Schema(type="int")
-     * )
-     * @OA\Tag(name="Products")
-     *  * 
-     * @param ProductRepository $productRepository
-     * @param SerializerInterface $serializer
-     * @param Request $request
-     * @param TagAwareCacheInterface $cache
-     * @return JsonResponse
-     */
-
-    public function getProductById( 
-      SerializerInterface $serializer, 
-      Product $product
-      ): JsonResponse
-    {       
-      $jsonProduct = $serializer->serialize($product, 'json');
-        return new JsonResponse(
-          $jsonProduct, Response::HTTP_OK,[], true
-        ); 
+        return new JsonResponse($jsonProduct, Response::HTTP_OK, [], true);
     }
 }

@@ -1,7 +1,9 @@
 <?php
 
 namespace App\Controller;
-
+use Nelmio\ApiDocBundle\Attribute\Model;
+use Nelmio\ApiDocBundle\Annotation\Security as ApiSecurity;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,244 +21,222 @@ use Symfony\Component\Security\Http\Attribute\Security;
 use App\Service\VersioningService;
 use JMS\Serializer\SerializationContext;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Nelmio\ApiDocBundle\Annotation\Model;
-use Nelmio\ApiDocBundle\Annotation\Security as ApiSecurity;
-use OpenApi\Annotations as OA;
 
 
 
+
+#[OA\Tag(name: 'Users')]
 final class UserController extends AbstractController
 {
-    /**
-     * Cette méthode permet de récupérer l'ensemble des utilisateurs.
-     * 
-     * @OA\Response(
-     *     response=200,
-     *     description="Retourne la liste des utilisateurs",
-     *     @OA\JsonContent(
-     *        type="array",
-     *        @OA\Items(ref=@Model(type=User::class, groups={"getUser"}))
-     *     )
-     * )
-     * @OA\Parameter(
-     *     name="page",
-     *     in="query",
-     *     description="La page que l'on veut récupérer",
-     *     @OA\Schema(type="int")
-     * )
-     * @OA\Parameter(
-     *     name="limit",
-     *     in="query",
-     *     description="Le nombre d'utilisateurs que l'on veut récupérer",
-     *     @OA\Schema(type="int")
-     * )
-     * @OA\Tag(name="Users")
-     * @ApiSecurity(name="Bearer")
-     */
-
+// Liste des utilisateurs
     #[Route('/api/users', name: 'app_user', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/users',
+        summary: 'Liste des utilisateurs',
+        description: "Cette méthode permet de récupérer l'ensemble des utilisateurs.",
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Parameter(
+        name: 'page',
+        in: 'query',
+        description: "La page que l'on veut récupérer",
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Parameter(
+        name: 'limit',
+        in: 'query',
+        description: "Le nombre d'utilisateurs que l'on veut récupérer",
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Retourne la liste des utilisateurs',
+        content: new OA\JsonContent(
+            type: 'array',
+            items: new OA\Items(
+                ref: new Model(type: User::class, groups: ['getUser'])
+            )
+        )
+    )]
+    public function getAllUsers(
+        UserRepository $userRepository,
+        SerializerInterface $serializer,
+        Request $request
+    ): JsonResponse {
+        $page  = (int) $request->query->get('page', 1);
+        $limit = (int) $request->query->get('limit', 5);
 
-    // #[Security("is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')", message: "Accès non autorisé")]
+        $users       = $userRepository->findAllWithPagination($page, $limit);
+        $context     = SerializationContext::create()->setGroups(['getUser']);
+        $jsonContent = $serializer->serialize($users, 'json', $context);
 
-    public function getAllUsers(UserRepository $userRepository, SerializerInterface $serializer, Request $request): JsonResponse
-    {
-        $page = $request->query->get('page', 1);
-        $limit = $request->query->get('limit', 5);
-        
-        $userList = $userRepository->findAllWithPagination($page, $limit);
-        $context = SerializationContext::create()->setGroups(['getUser']);
-        $jsonUserList = $serializer->serialize($userList, 'json', $context);
-        return new JsonResponse(
-            $jsonUserList, Response::HTTP_OK, [], true
-        );
+        return new JsonResponse($jsonContent, Response::HTTP_OK, [], true);
     }
-    
-    
-    /**
-     * Cette méthode permet de récupérer les détails d'un utilisateur.
-     * 
-     * @OA\Response(
-     *     response=200,
-     *     description="Retourne les détails d'un utilisateur",
-     *     @OA\JsonContent(
-     *        ref=@Model(type=User::class, groups={"getUser"})
-     *     )
-     * )
-     * @OA\Response(
-     *     response=404,
-     *     description="Cet utilisateur n'existe pas"
-     * )
-     * @OA\Parameter(
-     *     name="id",
-     *     in="path",
-     *     description="ID de l'utilisateur",
-     *     required=true,
-     *     @OA\Schema(type="integer")
-     * )
-     * @OA\Tag(name="Users")
-     * @ApiSecurity(name="Bearer")
-     */
 
+    // Détails d'un utilisateur
     #[Route('/api/user/{id}', name: 'app_user_id', methods: ['GET'])]
-    public function getUserById(UserRepository $userRepository, SerializerInterface $serializer, int $id): JsonResponse
-    {
+    #[OA\Get(
+        path: '/api/user/{id}',
+        summary: "Détails d'un utilisateur",
+        description: "Cette méthode permet de récupérer les détails d'un utilisateur.",
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        description: "ID de l'utilisateur",
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Retourne les détails d'un utilisateur",
+        content: new OA\JsonContent(
+            ref: new Model(type: User::class, groups: ['getUser'])
+        )
+    )]
+    #[OA\Response(response: 404, description: "Cet utilisateur n'existe pas")]
+    public function getUserById(
+        UserRepository $userRepository,
+        SerializerInterface $serializer,
+        int $id
+    ): JsonResponse {
         $user = $userRepository->find($id);
-        if ($user) {
-            $context = SerializationContext::create()->setGroups(['getUser']);
-            $jsonUser = $serializer->serialize($user, 'json', $context);
-            return new JsonResponse(
-                $jsonUser, Response::HTTP_OK, [], true
-            );
+
+        if (!$user) {
+            return new JsonResponse('Cet utilisateur n\'existe pas', Response::HTTP_NOT_FOUND);
         }
-        return new JsonResponse(
-            'Cet utilisateur n\'existe pas', Response::HTTP_NOT_FOUND
-        );
-    }
 
-    /**
-     * Cette méthode permet de supprimer un utilisateur.
-     * 
-     * @OA\Response(
-     *     response=204,
-     *     description="Utilisateur supprimé avec succès"
-     * )
-     * @OA\Response(
-     *     response=404,
-     *     description="Cet utilisateur n'existe pas"
-     * )
-     * @OA\Parameter(
-     *     name="id",
-     *     in="path",
-     *     description="ID de l'utilisateur à supprimer",
-     *     required=true,
-     *     @OA\Schema(type="integer")
-     * )
-     * @OA\Tag(name="Users")
-     * @ApiSecurity(name="Bearer")
-     */
-    
-    #[Route('/api/user/{id}', name: 'delete_user_id', methods: ['DELETE'])]
-    public function deleteUser(UserRepository $userRepository, int $id, EntityManagerInterface $entityManager): JsonResponse
-    {
-        $user = $userRepository->find($id);
-        if ($user) {
-            $customer = $user->getCustomer();
-                        $entityManager->remove($user);
-            $entityManager->flush();
-            return new JsonResponse(
-                'Utilisateur supprimé', Response::HTTP_NO_CONTENT
-            );
+        $context     = SerializationContext::create()->setGroups(['getUser']);
+        $jsonContent = $serializer->serialize($user, 'json', $context);
+
+        return new JsonResponse($jsonContent, Response::HTTP_OK, [], true);
         }
-        
-        return new JsonResponse(
-            'Ce utilisateur n\'existe pas', Response::HTTP_NOT_FOUND
-        );
-    }
-
-    /**
-     * Cette méthode permet de créer un utilisateur.
-     * 
-     * @OA\RequestBody(
-     *     @OA\MediaType(
-     *         mediaType="application/json",
-     *         @OA\Schema(
-     *             @OA\Property(
-     *                 property="username",
-     *                 type="string",
-     *                 example="john_doe"
-     *             ),
-     *             @OA\Property(
-     *                 property="password",
-     *                 type="string",
-     *                 example="password123"
-     *             ),
-     *             @OA\Property(
-     *                 property="email",
-     *                 type="string",
-     *                 format="email",
-     *                 example="john@example.com"
-     *             ),
-     *             @OA\Property(
-     *                 property="customerId",
-     *                 type="integer",
-     *                 example=1
-     *             )
-     *         )
-     *     )
-     * )
-     * @OA\Response(
-     *     response=201,
-     *     description="Utilisateur créé avec succès",
-     *     @OA\JsonContent(
-     *         ref=@Model(type=User::class, groups={"getUser"})
-     *     )
-     * )
-     * @OA\Response(
-     *     response=400,
-     *     description="Erreur de validation des données"
-     * )
-     * @OA\Response(
-     *     response=404,
-     *     description="Le client n'existe pas"
-     * )
-     * @OA\Tag(name="Users")
-     * @ApiSecurity(name="Bearer")
-     */
-
+    // Création d'un utilisateur
     #[Route('/api/user', name: 'create_user', methods: ['POST'])]
+    #[OA\Post(
+        path: '/api/user',
+        summary: 'Créer un utilisateur',
+        description: 'Cette méthode permet de créer un utilisateur.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            type: 'object',
+            properties: [
+                new OA\Property(property: 'username',   type: 'string', example: 'john_doe'),
+                new OA\Property(property: 'password',   type: 'string', example: 'password123'),
+                new OA\Property(property: 'email',      type: 'string', format: 'email', example: 'john@example.com'),
+                new OA\Property(property: 'customerId', type: 'integer', example: 1),
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 201,
+        description: 'Utilisateur créé avec succès',
+        content: new OA\JsonContent(
+            ref: new Model(type: User::class, groups: ['getUser'])
+        )
+    )]
+    #[OA\Response(response: 400, description: 'Erreur de validation des données')]
+    #[OA\Response(response: 404, description: "Le client n'existe pas")]
     public function createUser(
-        Request $request, 
-        SerializerInterface $serializer, 
-        EntityManagerInterface $entityManager, 
+        Request $request,
+        SerializerInterface $serializer,
+        EntityManagerInterface $entityManager,
         UrlGeneratorInterface $urlGenerator,
         ValidatorInterface $validator,
         CustomerRepository $customerRepository,
-        UserPasswordHasherInterface $passwordHasher): JsonResponse
-    {
-        $user = $serializer->deserialize($request->getContent(), User::class, 'json');
-        $content = $request->toArray();
-        
-         if (empty($user->getRoles())) {
+        UserPasswordHasherInterface $passwordHasher
+    ): JsonResponse {
+    
+        $user     = $serializer->deserialize($request->getContent(), User::class, 'json');
+        $payload  = $request->toArray();
+
+       
+        if (empty($user->getRoles())) {
             $user->setRoles(['ROLE_USER']);
         }
-        
+
+       
         $user->setPassword(
-            $passwordHasher->hashPassword(
-                $user,
-                $user->getPassword()
-            )
+            $passwordHasher->hashPassword($user, $user->getPassword())
         );
 
+      
         $errors = $validator->validate($user);
-        if(count($errors) > 0){
-            return new JsonResponse([
-                $serializer->serialize($errors, 'json', ['groups' => 'getUser']) 
-            ], Response::HTTP_BAD_REQUEST);
+        if (count($errors) > 0) {
+            $errorsJson = $serializer->serialize($errors, 'json');
+            return new JsonResponse($errorsJson, Response::HTTP_BAD_REQUEST, [], true);
         }
 
-         $idCustomer = $content['id_customer'] ?? ($content['customer']['id'] ?? -1);
-            
-        
-            if ($idCustomer > 0) {
-                $customer = $customerRepository->find($idCustomer);
-                if ($customer) {
-                    $user->setCustomer($customer);
-                } else {
-                    return new JsonResponse(['error' => 'Client non trouvé avec ID ' . $idCustomer], Response::HTTP_BAD_REQUEST);
-                }
-            } else {
-                return new JsonResponse(null, Response::HTTP_BAD_REQUEST);
-            }
-            
+    
+        $customerId = $payload['customerId'] ?? $payload['id_customer'] ?? null;
 
-            $entityManager->persist($user);
-            $entityManager->flush();
-            $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'getUser']);
-            $location = $urlGenerator->generate('app_user_id', ['id' => $user->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
+        if ($customerId) {
+            $customer = $customerRepository->find($customerId);
+            if (!$customer) {
+                return new JsonResponse(
+                    ['error' => "Client non trouvé avec l'ID $customerId"],
+                    Response::HTTP_NOT_FOUND
+                );
+            }
+            $user->setCustomer($customer);
+        } else {
             return new JsonResponse(
-                $jsonUser, Response::HTTP_CREATED, ['Location' => $location], true
+                ['error' => 'ID du client manquant'],
+                Response::HTTP_BAD_REQUEST
             );
+        }
+
+      
+        $entityManager->persist($user);
+        $entityManager->flush();
+
+ 
+        $jsonUser  = $serializer->serialize($user, 'json', ['groups' => 'getUser']);
+        $location  = $urlGenerator->generate(
+            'app_user_id',
+            ['id' => $user->getId()],
+            UrlGeneratorInterface::ABSOLUTE_URL
+        );
+
+        return new JsonResponse($jsonUser, Response::HTTP_CREATED, ['Location' => $location], true);
+    }
+    // Suppression d'un utilisateur
+    #[Route('/api/user/{id}', name: 'delete_user_id', methods: ['DELETE'])]
+    #[OA\Delete(
+        path: '/api/user/{id}',
+        summary: 'Supprimer un utilisateur',
+        description: 'Cette méthode permet de supprimer un utilisateur.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        description: "ID de l'utilisateur à supprimer",
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(response: 204, description: 'Utilisateur supprimé avec succès')]
+    #[OA\Response(response: 404, description: "Cet utilisateur n'existe pas")]
+    public function deleteUser(
+        UserRepository $userRepository,
+        int $id,
+        EntityManagerInterface $entityManager
+    ): JsonResponse {
+        $user = $userRepository->find($id);
+
+        if (!$user) {
+            return new JsonResponse('Cet utilisateur n\'existe pas', Response::HTTP_NOT_FOUND);
+        }
+
+        $entityManager->remove($user);
+        $entityManager->flush();
+
+        return new JsonResponse('Utilisateur supprimé', Response::HTTP_NO_CONTENT);
     }
 
+ 
 }
-
