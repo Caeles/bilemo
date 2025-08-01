@@ -55,6 +55,7 @@ final class ProductController extends AbstractController
      * @param TagAwareCacheInterface $cache
      * @return JsonResponse
      */
+    
     public function __construct(private VersioningService $versioningService) {}
 
     #[Route('', name: '_list')]
@@ -70,6 +71,7 @@ final class ProductController extends AbstractController
       $limit = $request->query->get('limit', 5);
 
       $idCache = "getAllProducts_" . $page . '_' . $limit;
+
       //permet de savoir si l'élément vient d'être mis en cache
       $fromCache = true;
       
@@ -92,6 +94,7 @@ final class ProductController extends AbstractController
    
     #[Route('/{id}', name: '_show')]
     #[IsGranted('ROLE_USER', message: "Accès non autorisé")]
+
      /**
      * Cette méthode permet de récupérer les détails d'un produit.
      * 
@@ -117,6 +120,7 @@ final class ProductController extends AbstractController
      * @param TagAwareCacheInterface $cache
      * @return JsonResponse
      */
+
     public function getProductById( 
       SerializerInterface $serializer, 
       Product $product

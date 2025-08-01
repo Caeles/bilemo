@@ -35,11 +35,10 @@ class VersioningService
  
         $request = $this->requestStack->getCurrentRequest();
         $accept = $request->headers->get('Accept');
-        // Récupération du numéro de version dans la chaîne  de caractères du accept :
-        // exemple "application/json; test=bidule; version=2.0" => 2.0
+      
         $entete = explode(';', $accept);
        
-        // On parcours toutes les entêtes pour trouver la version
+        // on parcours toutes les entêtes pour trouver la version
         foreach ($entete as $value) {
             if (strpos($value, 'version') !== false) {
                 $version = explode('=', $value);

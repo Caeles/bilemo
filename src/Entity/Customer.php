@@ -126,7 +126,6 @@ class Customer
     public function removeUser(User $user): static
     {
         if ($this->users->removeElement($user)) {
-            // set the owning side to null (unless already changed)
             if ($user->getCustomer() === $this) {
                 $user->setCustomer(null);
             }

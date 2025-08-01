@@ -53,8 +53,11 @@ final class UserController extends AbstractController
      * @OA\Tag(name="Users")
      * @ApiSecurity(name="Bearer")
      */
+
     #[Route('/api/users', name: 'app_user', methods: ['GET'])]
+
     // #[Security("is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')", message: "Accès non autorisé")]
+
     public function getAllUsers(UserRepository $userRepository, SerializerInterface $serializer, Request $request): JsonResponse
     {
         $page = $request->query->get('page', 1);
@@ -68,24 +71,6 @@ final class UserController extends AbstractController
         );
     }
     
-    // #[Route('/api/users', name: 'app_user_create', methods: ['POST'])]
-    // #[IsGranted('ROLE_ADMIN', message: "Accès non autorisé")]
-    // public function createUser(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator): JsonResponse
-    // {
-    //     $user = $serializer->deserialize($request->getContent(), User::class, 'json');
-        
-    //     // Vous pourriez ajouter des validations ici
-        
-    //     $em->persist($user);
-    //     $em->flush();
-        
-    //     $context = SerializationContext::create()->setGroups(['getUser']);
-    //     $jsonUser = $serializer->serialize($user, 'json', $context);
-        
-    //     $location = $urlGenerator->generate('app_user_id', ['id' => $user->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
-        
-    //     return new JsonResponse($jsonUser, Response::HTTP_CREATED, ["Location" => $location], true);
-    // }
     
     /**
      * Cette méthode permet de récupérer les détails d'un utilisateur.
@@ -111,6 +96,7 @@ final class UserController extends AbstractController
      * @OA\Tag(name="Users")
      * @ApiSecurity(name="Bearer")
      */
+
     #[Route('/api/user/{id}', name: 'app_user_id', methods: ['GET'])]
     public function getUserById(UserRepository $userRepository, SerializerInterface $serializer, int $id): JsonResponse
     {
@@ -148,6 +134,7 @@ final class UserController extends AbstractController
      * @OA\Tag(name="Users")
      * @ApiSecurity(name="Bearer")
      */
+    
     #[Route('/api/user/{id}', name: 'delete_user_id', methods: ['DELETE'])]
     public function deleteUser(UserRepository $userRepository, int $id, EntityManagerInterface $entityManager): JsonResponse
     {
@@ -215,6 +202,7 @@ final class UserController extends AbstractController
      * @OA\Tag(name="Users")
      * @ApiSecurity(name="Bearer")
      */
+
     #[Route('/api/user', name: 'create_user', methods: ['POST'])]
     public function createUser(
         Request $request, 
