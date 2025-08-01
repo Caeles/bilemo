@@ -16,7 +16,7 @@ class ProductRepository extends ServiceEntityRepository
         parent::__construct($registry, Product::class);
     }
 
-    public function findAllWithPagination($page,$limit)
+    public function findAllWithPagination($page, $limit)
     {
         $qb = $this->createQueryBuilder('b')
             ->setFirstResult(($page - 1) * $limit)

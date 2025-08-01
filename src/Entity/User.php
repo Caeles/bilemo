@@ -4,16 +4,50 @@ namespace App\Entity;
 
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Serializer\Annotation\Groups;
-use Symfony\Component\Serializer\Annotation\MaxDepth;
+use JMS\Serializer\Annotation\Groups;
+use JMS\Serializer\Annotation\MaxDepth;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Hateoas\Configuration\Annotation as Hateoas;
+
+/**
+ * @Hateoas\Relation(
+ *      "self",
+ *      href = @Hateoas\Route(
+ *          "app_user_id",
+ *          parameters = { "id" = "expr(object.getId())" }
+ *      ),
+ *      exclusion = @Hateoas\Exclusion(groups={"getUser"})
+ * )
+ * @Hateoas\Relation(
+ *      "list",
+ *      href = @Hateoas\Route(
+ *          "app_user"
+ *      ),
+ *      exclusion = @Hateoas\Exclusion(groups={"getUser"})
+ * )
+ * @Hateoas\Relation(
+ *      "delete",
+ *      href = @Hateoas\Route(
+ *          "delete_user_id",
+ *          parameters = { "id" = "expr(object.getId())" }
+ *      ),
+ *      exclusion = @Hateoas\Exclusion(groups={"getUser"}, excludeIf = "expr(not is_granted('ROLE_ADMIN'))") 
+ * )
+ * @Hateoas\Relation(
+ *      "create",
+ *      href = @Hateoas\Route(
+ *          "create_user"
+ *      ),
+ *      exclusion = @Hateoas\Exclusion(groups={"getUser"}, excludeIf = "expr(not is_granted('ROLE_ADMIN'))") 
+ * )
+ */
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['Email'])]
-#[Groups(['getUser', 'getCustomer'])]
+// #[Groups(['getUser', 'getCustomer'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]

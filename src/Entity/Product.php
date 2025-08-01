@@ -6,6 +6,7 @@ use App\Repository\ProductRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 class Product
@@ -13,26 +14,33 @@ class Product
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(nullable: false)]
+    #[Groups(['getProducts'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255, nullable: false)]
     #[Assert\Length(min: 2, max: 255)]
     #[Assert\NotBlank(message: 'Le nom du produit est obligatoire')]
+    #[Groups(['getProducts'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['getProducts'])]
     private ?string $brand = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['getProducts'])]
     private ?string $model = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['getProducts'])]
     private ?string $Color = null;
 
     #[ORM\Column(length: 255, nullable: false)]
+    #[Groups(['getProducts'])]
     private ?string $Price = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2, nullable: false)]
+    #[Groups(['getProducts'])]
     private ?string $quantity = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: false)]
@@ -42,10 +50,12 @@ class Product
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\Column(length: 255, nullable: false)]
+    #[Groups(['getProducts'])]
     private ?string $description = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Since('1.0')]
+
     private ?string $comment = null;
 
     public function getId(): ?int
