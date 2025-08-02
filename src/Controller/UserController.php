@@ -125,10 +125,11 @@ final class UserController extends AbstractController
         content: new OA\JsonContent(
             type: 'object',
             properties: [
-                new OA\Property(property: 'username',   type: 'string', example: 'john_doe'),
+                new OA\Property(property: 'firstName',   type: 'string', example: 'Alice'),
+                new OA\Property(property: 'lastName',   type: 'string', example: 'BOSSLIN'),
+                new OA\Property(property: 'Email',      type: 'string', format: 'email', example: 'alice@bilemo.com'),
                 new OA\Property(property: 'password',   type: 'string', example: 'password123'),
-                new OA\Property(property: 'email',      type: 'string', format: 'email', example: 'john@example.com'),
-                new OA\Property(property: 'customerId', type: 'integer', example: 1),
+                new OA\Property(property: 'customerId', type: 'integer', example: 61, description: 'Optionnel'),
             ]
         )
     )]
@@ -183,19 +184,17 @@ final class UserController extends AbstractController
                 );
             }
             $user->setCustomer($customer);
-        } else {
-            return new JsonResponse(
-                ['error' => 'ID du client manquant'],
-                Response::HTTP_BAD_REQUEST
-            );
         }
+        // Si aucun customerId n'est fourni, l'utilisateur est créé sans être associé à un client
+
 
       
         $entityManager->persist($user);
         $entityManager->flush();
 
  
-        $jsonUser  = $serializer->serialize($user, 'json', ['groups' => 'getUser']);
+        $context = \JMS\Serializer\SerializationContext::create()->setGroups(['getUser']);
+        $jsonUser  = $serializer->serialize($user, 'json', $context);
         $location  = $urlGenerator->generate(
             'app_user_id',
             ['id' => $user->getId()],

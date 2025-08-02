@@ -9,7 +9,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Serializer\SerializerInterface;
+use JMS\Serializer\SerializerInterface;
 use Symfony\Component\Security\Http\Attribute\Security;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use Nelmio\ApiDocBundle\Annotation\Security as ApiSecurity;
@@ -41,7 +41,8 @@ final class CustomerController extends AbstractController
         SerializerInterface $serializer
     ): JsonResponse {
         $customers   = $customerRepository->findAll();
-        $jsonContent = $serializer->serialize($customers, 'json', ['groups' => 'getCustomer']);
+        $context = \JMS\Serializer\SerializationContext::create()->setGroups(['getCustomer']);
+        $jsonContent = $serializer->serialize($customers, 'json', $context);
 
         return new JsonResponse($jsonContent, Response::HTTP_OK, [], true);
     }
@@ -72,7 +73,8 @@ final class CustomerController extends AbstractController
         Customer $customer,
         SerializerInterface $serializer
     ): JsonResponse {
-        $jsonContent = $serializer->serialize($customer, 'json', ['groups' => 'getCustomer']);
+        $context = \JMS\Serializer\SerializationContext::create()->setGroups(['getCustomer']);
+        $jsonContent = $serializer->serialize($customer, 'json', $context);
 
         return new JsonResponse($jsonContent, Response::HTTP_OK, [], true);
     }
@@ -107,7 +109,8 @@ final class CustomerController extends AbstractController
         SerializerInterface $serializer
     ): JsonResponse {
         $users       = $customer->getUsers();
-        $jsonContent = $serializer->serialize($users, 'json', ['groups' => 'getCustomer']);
+        $context = \JMS\Serializer\SerializationContext::create()->setGroups(['getCustomer']);
+        $jsonContent = $serializer->serialize($users, 'json', $context);
 
         return new JsonResponse($jsonContent, Response::HTTP_OK, [], true);
     }

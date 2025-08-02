@@ -7,7 +7,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Repository\ProductRepository;
-use Symfony\Component\Serializer\SerializerInterface;
+use JMS\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -82,7 +82,8 @@ final class ProductController extends AbstractController
             }
         );
 
-        $jsonList = $serializer->serialize($productList, 'json', ['groups' => 'getProducts']);
+        $context = \JMS\Serializer\SerializationContext::create()->setGroups(['getProducts']);
+        $jsonList = $serializer->serialize($productList, 'json', $context);
         $response = new JsonResponse($jsonList, Response::HTTP_OK, [], true);
 
         if (!$fromCache) {
@@ -118,7 +119,8 @@ final class ProductController extends AbstractController
         SerializerInterface $serializer,
         Product $product
     ): JsonResponse {
-        $jsonProduct = $serializer->serialize($product, 'json');
+        $context = \JMS\Serializer\SerializationContext::create()->setGroups(['getProducts']);
+        $jsonProduct = $serializer->serialize($product, 'json', $context);
 
         return new JsonResponse($jsonProduct, Response::HTTP_OK, [], true);
     }
